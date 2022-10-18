@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Fruit Bucket</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="static/icon16.png" type="image/x-icon" />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light navbar-fixed-top">
+      <a class="navbar-brand" href="index.html">
+        <img
+          src="static/icon96.png"
+          width="auto"
+          height="40"
+          class="d-inline-block"
+          alt=""
+        />
+        Fruit Bucket
+      </a>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="nav nav-tabs">
+          <li class="nav-item">
+            <a class="nav-link active" href="index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="update.html">Update</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container" style="margin-top: 1em">
+      <div class="col-lg-12 row">
+        <div class="row">
+          <form method="post" enctype="multipart/form-data">
+            <div class="card shadow mb-4">
+              <div class="card-header py-3" id="headingOne">
+                <div class="row">
+                  <div class="col-sm-6">
+                    <h6
+                      class="m-2 font-weight-bold text-primary align-baseline"
+                    >
+                      Fruits
+                    </h6>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <!-- Get datetime with tempus dominus -->
+
+                <div class="form-group">
+                  <label for="timepicker">Date and Time</label>
+                  <input
+                    type="datetime-local"
+                    id="timepicker"
+                    name="timepicker"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="handleGetClick()"
+                >
+                  Get
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="getFruits()"
+                >
+                  Now
+                </button>
+                <div id="timestamp"></div>
+
+                <div class="table-responsive">
+                  <table
+                    class="table table-bordered"
+                    id="dataTable"
+                    width="100%"
+                    cellspacing="0"
+                  >
+                    <thead id="thead"></thead>
+
+                    <tbody id="tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    function handleGetClick() {
+      var timepicker = document.getElementById('timepicker').value;
+      timepicker = new Date(timepicker).getTime() / 1000.0;
+      getFruits(timepicker);
+    }
+
+    function padTo2Digits(num) {
+      return num.toString().padStart(2, '0');
+    }
+
+    function formatDate(date) {
+      return (
+        [
+          date.getFullYear(),
+          padTo2Digits(date.getMonth() + 1),
+          padTo2Digits(date.getDate()),
+        ].join('-') +
+        ' ' +
+        [
+          padTo2Digits(date.getHours()),
+          padTo2Digits(date.getMinutes()),
+          padTo2Digits(date.getSeconds()),
+        ].join(':')
+      );
+    }
+
+    function getDate(datetime, char = 'T') {
+      datetime = new Date(datetime);
+      const [date, time] = formatDate(datetime).split(' ');
+      return date + char + time;
+    }
+
+    function getFruits(timestamp) {
+      if (timestamp == null) {
+        timestamp = Date.now();
+        // set timepicker input to now
+
+        document.getElementById('timepicker').value = getDate(timestamp);
+        timestamp /= 1000;
+        timestamp +=  0.5;
+      }
+      $.ajax({
+        url: '/bucket/' + timestamp,
+        type: 'GET',
+        success: function (data) {
+          const capitalize = (s) => {
+            if (typeof s !== 'string') return '';
+            return s.charAt(0).toUpperCase() + s.slice(1);
+          };
+          // fill table
+          var header = document.getElementById('thead');
+          var body = document.getElementById('tbody');
+          let headerHTML = '';
+          let bodyHTML = '';
+          for (let i in data.fruits) {
+            headerHTML += '<th span="col">' + capitalize(i) + '</th>';
+            bodyHTML += '<td span="row">' + data.fruits[i] + '</td>';
+          }
+          header.innerHTML = headerHTML;
+          body.innerHTML = bodyHTML;
+
+          // set timestamp text
+          if (data.timestamp) {
+            document.getElementById('timestamp').innerHTML =
+              '<strong>Found Timestamp: </strong>' +
+              getDate(data.timestamp * 1000, ' ');
+          } else {
+            document.getElementById('timestamp').innerHTML =
+              '<strong>No record found.</strong> ';
+          }
+        },
+        error: function (xhr, status, error) {
+          console.log(xhr.responseText);
+        },
+      });
+    }
+    getFruits();
+  </script>
+</html>
